@@ -68,9 +68,9 @@ func (t *Twitter) Post(url string, params map[string]string) (interface{}, error
 }
 
 func main() {
-	twitter := NewTwitter("ConsumerKey", "ConsumerSecret", "AccessToken", "AccessTokenSecret")
+	twitter := NewTwitter("3PNBbgWuPYMAPsJ3lHLuu9E29", "eQxU7jrfpcUiV4O4dpRBfLWMAsS8rTTZkqLehyWB2dGHDS5Ta5", "3527859379-naqp2WQMAXOL1gkmJZL6ILaQUxPnnjJLpGFAWUU", "JWd84aTCAenBgqWytq60hzkkMesgwo3qRRMiyoBHVY046")
 	dajareCount := 0
-	oldTweetTime := " "
+	oldTweetID := " "
 	for {
 		// ホームタイムラインを取得
 		res, err := twitter.Get(
@@ -84,7 +84,7 @@ func main() {
 		newTweet := res.([]interface{})[0]
 		tweet, _ := newTweet.(map[string]interface{})
 
-		if !(tweet["created_at"].(string) == oldTweetTime) {
+		if tweet["id_str"].(string) != oldTweetID {
 			//ツイートの内容を変数に格納
 			text := tweet["text"]
 
@@ -102,10 +102,10 @@ func main() {
 					// ダジャレの検出ツイート
 					twitter.Post(
 						"https://api.twitter.com/1.1/statuses/update.json",
-						map[string]string{"status": "@" + user["screen_name"].(string) + " " + strconv.Itoa(dajareCount) + "回目のダジャレを検出しました。"})
+						map[string]string{"status": "@" + user["screen_name"].(string) + " " + strconv.Itoa(dajareCount) + "回目のダジャレを検出しました。", "in_reply_to_status_id": tweet["id_str"].(string)})
 				}
 			}
-			oldTweetTime = tweet["created_at"].(string)
+			oldTweetID = tweet["id_str"].(string)
 		}
 		time.Sleep(60000 * time.Millisecond)
 	}
