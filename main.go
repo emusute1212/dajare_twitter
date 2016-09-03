@@ -80,32 +80,45 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// 最新ツイートの入手
-		newTweet := res.([]interface{})[0]
-		tweet, _ := newTweet.(map[string]interface{})
-
-		if tweet["id_str"].(string) != oldTweetID {
-			//ツイートの内容を変数に格納
-			text := tweet["text"]
-
-			//ツイートの表示
-			fmt.Println(tweet["text"])
-
-			//interface{}型からstringへの変換が可能な場合、okはtrueとなる
-			if str, ok := text.(string); ok {
-				dajare, _ := dajarep.Dajarep(str)
-				if len(dajare) >= 1 {
-					// ダジャレカウント
-					dajareCount++
-					// ユーザデータを変数に格納
-					user := tweet["user"].(map[string]interface{})
-					// ダジャレの検出ツイート
-					twitter.Post(
-						"https://api.twitter.com/1.1/statuses/update.json",
-						map[string]string{"status": "@" + user["screen_name"].(string) + " " + strconv.Itoa(dajareCount) + "回目のダジャレを検出しました。", "in_reply_to_status_id": tweet["id_str"].(string)})
-				}
-			}
+		//初回起動時にoldTweetIDにIDをセットする
+		if oldTweetID == " " {
+			// 最新ツイートの入手
+			newTweet := res.([]interface{})[0]
+			tweet, _ := newTweet.(map[string]interface{})
 			oldTweetID = tweet["id_str"].(string)
+		}
+
+		//最新ツイート全ての読み込み
+		for i := 0; ; i++ {
+			//最新ツイートの読み込み
+			newTweet := res.([]interface{})[i]
+			tweet, _ := newTweet.(map[string]interface{})
+
+			if tweet["id_str"].(string) != oldTweetID {
+				//ツイートの内容を変数に格納
+				text := tweet["text"]
+
+				//ツイートの表示
+				fmt.Println(tweet["text"])
+
+				//interface{}型からstringへの変換が可能な場合、okはtrueとなる
+				if str, ok := text.(string); ok {
+					dajare, _ := dajarep.Dajarep(str)
+					if len(dajare) >= 1 {
+						// ダジャレカウント
+						dajareCount++
+						// ユーザデータを変数に格納
+						user := tweet["user"].(map[string]interface{})
+						// ダジャレの検出ツイート
+						twitter.Post(
+							"https://api.twitter.com/1.1/statuses/update.json",
+							map[string]string{"status": "@" + user["screen_name"].(string) + " " + strconv.Itoa(dajareCount) + "回目のダジャレを検出しました。", "in_reply_to_status_id": tweet["id_str"].(string)})
+					}
+				}
+			} else {
+				oldTweetID = res.([]interface{})[0].(map[string]interface{})["id_str"].(string)
+				break
+			}
 		}
 		time.Sleep(60000 * time.Millisecond)
 	}
