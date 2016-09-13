@@ -68,10 +68,15 @@ func (t *Twitter) Post(url string, params map[string]string) (interface{}, error
 }
 
 func main() {
+	fmt.Println("検出開始です。")
 	twitter := NewTwitter("3PNBbgWuPYMAPsJ3lHLuu9E29", "eQxU7jrfpcUiV4O4dpRBfLWMAsS8rTTZkqLehyWB2dGHDS5Ta5", "3527859379-naqp2WQMAXOL1gkmJZL6ILaQUxPnnjJLpGFAWUU", "JWd84aTCAenBgqWytq60hzkkMesgwo3qRRMiyoBHVY046")
-	dajareCount := 0
 	oldTweetID := " "
+	dajareCount := 0
+	var newTweet interface{}
+	var tweet map[string]interface{}
+
 	for {
+		var myTweet interface{} = " "
 		// ホームタイムラインを取得
 		res, err := twitter.Get(
 			"https://api.twitter.com/1.1/statuses/home_timeline.json", // Resource URL
@@ -83,16 +88,16 @@ func main() {
 		//初回起動時にoldTweetIDにIDをセットする
 		if oldTweetID == " " {
 			// 最新ツイートの入手
-			newTweet := res.([]interface{})[0]
-			tweet, _ := newTweet.(map[string]interface{})
+			newTweet = res.([]interface{})[0]
+			tweet, _ = newTweet.(map[string]interface{})
 			oldTweetID = tweet["id_str"].(string)
 		}
 
 		//最新ツイート全ての読み込み
 		for i := 0; ; i++ {
 			//最新ツイートの読み込み
-			newTweet := res.([]interface{})[i]
-			tweet, _ := newTweet.(map[string]interface{})
+			newTweet = res.([]interface{})[i]
+			tweet, _ = newTweet.(map[string]interface{})
 
 			if tweet["id_str"].(string) != oldTweetID {
 				//ツイートの内容を変数に格納
@@ -103,23 +108,44 @@ func main() {
 
 				//interface{}型からstringへの変換が可能な場合、okはtrueとなる
 				if str, ok := text.(string); ok {
-					dajare, _ := dajarep.Dajarep(str)
+					dajare, kana := dajarep.Dajarep(str)
+					fmt.Println(dajare)
+					fmt.Println(kana)
 					if len(dajare) >= 1 {
-						// ダジャレカウント
 						dajareCount++
+						output := ""
+						for i := 0; i < len(dajare); i++ {
+							output += "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
+							if i < len(dajare)-1 {
+								output += "と"
+							} else {
+								output += "を検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。"
+							}
+						}
 						// ユーザデータを変数に格納
 						user := tweet["user"].(map[string]interface{})
-						// ダジャレの検出ツイート
-						twitter.Post(
-							"https://api.twitter.com/1.1/statuses/update.json",
-							map[string]string{"status": "@" + user["screen_name"].(string) + " " + strconv.Itoa(dajareCount) + "回目のダジャレを検出しました。", "in_reply_to_status_id": tweet["id_str"].(string)})
+						if len(output) <= 150 {
+							// ダジャレの検出ツイート
+							myTweet, _ = twitter.Post(
+								"https://api.twitter.com/1.1/statuses/update.json",
+								map[string]string{"status": "@" + user["screen_name"].(string) + " " + output, "in_reply_to_status_id": tweet["id_str"].(string)})
+						} else {
+							// ダジャレの検出ツイート
+							myTweet, _ = twitter.Post(
+								"https://api.twitter.com/1.1/statuses/update.json",
+								map[string]string{"status": "@" + user["screen_name"].(string) + " ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
+						}
 					}
 				}
 			} else {
-				oldTweetID = res.([]interface{})[0].(map[string]interface{})["id_str"].(string)
+				if _, ok := myTweet.(string); !ok {
+					oldTweetID = myTweet.(map[string]interface{})["id_str"].(string)
+				} else {
+					oldTweetID = res.([]interface{})[0].(map[string]interface{})["id_str"].(string)
+				}
 				break
 			}
 		}
-		time.Sleep(60000 * time.Millisecond)
+		time.Sleep(65000 * time.Millisecond)
 	}
 }
