@@ -111,29 +111,30 @@ func main() {
 					dajare, kana := dajarep.Dajarep(str)
 					fmt.Println(dajare)
 					fmt.Println(kana)
+					// ユーザデータを変数に格納
+					user := tweet["user"].(map[string]interface{})
+
 					if len(dajare) >= 1 {
 						dajareCount++
 						output := ""
 						for i := 0; i < len(dajare); i++ {
-							output += "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
+							output += "@" + user["screen_name"].(string) + "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
 							if i < len(dajare)-1 {
 								output += "と"
 							} else {
 								output += "を検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。"
 							}
 						}
-						// ユーザデータを変数に格納
-						user := tweet["user"].(map[string]interface{})
-						if len(output) <= 150 {
+						if len([]rune(output)) <= 140 {
 							// ダジャレの検出ツイート
 							myTweet, _ = twitter.Post(
 								"https://api.twitter.com/1.1/statuses/update.json",
-								map[string]string{"status": "@" + user["screen_name"].(string) + " " + output, "in_reply_to_status_id": tweet["id_str"].(string)})
+								map[string]string{"status": output, "in_reply_to_status_id": tweet["id_str"].(string)})
 						} else {
 							// ダジャレの検出ツイート
 							myTweet, _ = twitter.Post(
 								"https://api.twitter.com/1.1/statuses/update.json",
-								map[string]string{"status": "@" + user["screen_name"].(string) + " ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
+								map[string]string{"status": "@" + user["screen_name"].(string) + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
 						}
 					}
 				}
