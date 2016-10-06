@@ -118,7 +118,7 @@ func main() {
 						dajareCount++
 						output := ""
 						for i := 0; i < len(dajare); i++ {
-							output += "@" + user["screen_name"].(string) + "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
+							output += "@" + user["screen_name"].(string) + " @CaroBays " + "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
 							if i < len(dajare)-1 {
 								output += "と"
 							} else {
@@ -134,7 +134,7 @@ func main() {
 							// ダジャレの検出ツイート
 							myTweet, _ = twitter.Post(
 								"https://api.twitter.com/1.1/statuses/update.json",
-								map[string]string{"status": "@" + user["screen_name"].(string) + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
+								map[string]string{"status": "@" + user["screen_name"].(string) + " @CaroBays " + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
 						}
 					}
 				}
