@@ -28,6 +28,7 @@ func NewTwitter(consumerKey, consumerSecret, accessToken, accessTokenSecret stri
 			AccessTokenUrl:    "https://api.twitter.com/oauth/access_token",
 		})
 	twitter.accessToken = &oauth.AccessToken{accessToken, accessTokenSecret, nil}
+	// twitter.accessToken = &oauth.AccessToken{accessToken, accessTokenSecret}
 	return twitter
 }
 
@@ -68,12 +69,17 @@ func (t *Twitter) Post(url string, params map[string]string) (interface{}, error
 }
 
 func main() {
-	fmt.Println("検出開始です。")
+	// fmt.Println("検出開始です。")
 	twitter := NewTwitter("3PNBbgWuPYMAPsJ3lHLuu9E29", "eQxU7jrfpcUiV4O4dpRBfLWMAsS8rTTZkqLehyWB2dGHDS5Ta5", "3527859379-naqp2WQMAXOL1gkmJZL6ILaQUxPnnjJLpGFAWUU", "JWd84aTCAenBgqWytq60hzkkMesgwo3qRRMiyoBHVY046")
 	oldTweetID := " "
 	dajareCount := 0
 	var newTweet interface{}
 	var tweet map[string]interface{}
+
+	//ダジャレ検出開始通知
+	twitter.Post(
+		"https://api.twitter.com/1.1/statuses/update.json",
+		map[string]string{"status": "@CaroBays ダジャレ検出開始します。"})
 
 	for {
 		var myTweet interface{} = " "
@@ -118,7 +124,7 @@ func main() {
 						dajareCount++
 						output := ""
 						for i := 0; i < len(dajare); i++ {
-							output += "@" + user["screen_name"].(string) + "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
+							output += "@" + user["screen_name"].(string) + " @CaroBays " + "\"" + dajare[i] + "\" から \"" + kana[i] + "\""
 							if i < len(dajare)-1 {
 								output += "と"
 							} else {
@@ -134,7 +140,7 @@ func main() {
 							// ダジャレの検出ツイート
 							myTweet, _ = twitter.Post(
 								"https://api.twitter.com/1.1/statuses/update.json",
-								map[string]string{"status": "@" + user["screen_name"].(string) + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
+								map[string]string{"status": "@" + user["screen_name"].(string) + " @CaroBays " + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
 						}
 					}
 				}
