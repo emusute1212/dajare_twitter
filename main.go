@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/kurehajime/dajarep"
@@ -68,6 +70,12 @@ func (t *Twitter) Post(url string, params map[string]string) (interface{}, error
 	return result, err
 }
 
+// func checkSig(twitter *Twitter) {
+//
+// 	code := <-exitChan
+// 	os.Exit(code)
+// }
+
 func main() {
 	// fmt.Println("検出開始です。")
 	twitter := NewTwitter("3PNBbgWuPYMAPsJ3lHLuu9E29", "eQxU7jrfpcUiV4O4dpRBfLWMAsS8rTTZkqLehyWB2dGHDS5Ta5", "3527859379-naqp2WQMAXOL1gkmJZL6ILaQUxPnnjJLpGFAWUU", "JWd84aTCAenBgqWytq60hzkkMesgwo3qRRMiyoBHVY046")
@@ -77,9 +85,102 @@ func main() {
 	var tweet map[string]interface{}
 
 	//ダジャレ検出開始通知
-	twitter.Post(
+	_, error := twitter.Post(
 		"https://api.twitter.com/1.1/statuses/update.json",
 		map[string]string{"status": "@CaroBays ダジャレ検出開始します。"})
+
+	for i := 1; error != nil; i++ {
+		_, error = twitter.Post(
+			"https://api.twitter.com/1.1/statuses/update.json",
+			map[string]string{"status": "@CaroBays ダジャレ検出開始します。" + strconv.Itoa(i) + "回目"})
+	}
+
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	go func() {
+		for {
+			s := <-signalChan
+			switch s {
+			// kill -SIGHUP XXXX
+			case syscall.SIGHUP:
+				fmt.Println("hungup")
+
+			// kill -SIGINT XXXX or Ctrl+c
+			case syscall.SIGINT:
+				fmt.Println("Warikomi")
+				_, error := twitter.Post(
+					"https://api.twitter.com/1.1/statuses/update.json",
+					map[string]string{"status": "@CaroBays ダジャレの検出を終了します。"})
+				// _, error := twitter.Post(
+				// 	"https://api.twitter.com/1.1/statuses/update.json",
+				// 	map[string]string{"status": "ダジャレの検出を終了します。"})
+
+				for i := 1; error != nil; i++ {
+					_, error = twitter.Post(
+						"https://api.twitter.com/1.1/statuses/update.json",
+						map[string]string{"status": "ダジャレの検出を終了します。" + strconv.Itoa(i) + "回目"})
+				}
+				os.Exit(0)
+
+			// kill -SIGTERM XXXX
+			case syscall.SIGTERM:
+				fmt.Println("force stop")
+				_, error := twitter.Post(
+					"https://api.twitter.com/1.1/statuses/update.json",
+					map[string]string{"status": "@CaroBays ダジャレの検出を終了します。"})
+				// _, error := twitter.Post(
+				// 	"https://api.twitter.com/1.1/statuses/update.json",
+				// 	map[string]string{"status": "ダジャレの検出を終了します。"})
+
+				for i := 1; error != nil; i++ {
+					_, error = twitter.Post(
+						"https://api.twitter.com/1.1/statuses/update.json",
+						map[string]string{"status": "ダジャレの検出を終了します。" + strconv.Itoa(i) + "回目"})
+				}
+				os.Exit(0)
+
+			// kill -SIGQUIT XXXX
+			case syscall.SIGQUIT:
+				fmt.Println("stop and core dump")
+				_, error := twitter.Post(
+					"https://api.twitter.com/1.1/statuses/update.json",
+					map[string]string{"status": "@CaroBays ダジャレの検出を終了します。"})
+				// _, error := twitter.Post(
+				// 	"https://api.twitter.com/1.1/statuses/update.json",
+				// 	map[string]string{"status": "ダジャレの検出を終了します。"})
+
+				for i := 1; error != nil; i++ {
+					_, error = twitter.Post(
+						"https://api.twitter.com/1.1/statuses/update.json",
+						map[string]string{"status": "ダジャレの検出を終了します。" + strconv.Itoa(i) + "回目"})
+				}
+				os.Exit(0)
+
+			default:
+				fmt.Println("Unknown signal.")
+				_, error := twitter.Post(
+					"https://api.twitter.com/1.1/statuses/update.json",
+					map[string]string{"status": "@CaroBays ダジャレの検出を終了します。"})
+				// _, error := twitter.Post(
+				// 	"https://api.twitter.com/1.1/statuses/update.json",
+				// 	map[string]string{"status": "ダジャレの検出を終了します。"})
+
+				for i := 1; error != nil; i++ {
+					_, error = twitter.Post(
+						"https://api.twitter.com/1.1/statuses/update.json",
+						map[string]string{"status": "ダジャレの検出を終了します。" + strconv.Itoa(i) + "回目"})
+				}
+				os.Exit(1)
+			}
+		}
+	}()
+
+	fmt.Println("検出開始")
 
 	for {
 		var myTweet interface{} = " "
@@ -88,7 +189,18 @@ func main() {
 			"https://api.twitter.com/1.1/statuses/home_timeline.json", // Resource URL
 			map[string]string{})                                       // Parameters
 		if err != nil {
-			log.Fatal(err)
+			_, error := twitter.Post(
+				"https://api.twitter.com/1.1/statuses/update.json",
+				map[string]string{"status": "@CaroBays ダジャレの検出を終了します。"})
+			// _, error := twitter.Post(
+			// 	"https://api.twitter.com/1.1/statuses/update.json",
+			// 	map[string]string{"status": "ダジャレの検出を終了します。"})
+
+			for i := 1; error != nil; i++ {
+				_, error = twitter.Post(
+					"https://api.twitter.com/1.1/statuses/update.json",
+					map[string]string{"status": "ダジャレの検出を終了します。" + strconv.Itoa(i) + "回目"})
+			}
 		}
 
 		//初回起動時にoldTweetIDにIDをセットする
@@ -128,7 +240,7 @@ func main() {
 							if i < len(dajare)-1 {
 								output += "と"
 							} else {
-								output += "を検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。"
+								output += "を検出しました。\n検出開始から" + strconv.Itoa(dajareCount) + "回目。"
 							}
 						}
 						if len([]rune(output)) <= 140 {
@@ -140,7 +252,7 @@ func main() {
 							// ダジャレの検出ツイート
 							myTweet, _ = twitter.Post(
 								"https://api.twitter.com/1.1/statuses/update.json",
-								map[string]string{"status": "@" + user["screen_name"].(string) + " @CaroBays " + "ダジャレを検出しました。\n本日" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
+								map[string]string{"status": "@" + user["screen_name"].(string) + " @CaroBays " + "ダジャレを検出しました。\n検出開始から" + strconv.Itoa(dajareCount) + "回目。", "in_reply_to_status_id": tweet["id_str"].(string)})
 						}
 					}
 				}
@@ -155,4 +267,5 @@ func main() {
 		}
 		time.Sleep(65000 * time.Millisecond)
 	}
+
 }
