@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -143,4 +144,12 @@ func makeTweet(toName string, dajare []string, ward []string) string {
 	output = "@" + toName + targetUser + content
 
 	return output
+}
+
+func push(text string, q *list.List) {
+	q.PushBack(text)
+}
+
+func pop(q *list.List) (text string) {
+	return q.Remove(q.Front)
 }
