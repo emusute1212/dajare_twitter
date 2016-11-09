@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/emusute1212/dajare_twitter/queue"
 	"github.com/kurehajime/dajarep"
 )
 
@@ -59,6 +60,7 @@ func main() {
 	var userName string
 	var tweetID string
 	var userID string
+	queue.Init()
 
 	//ツイート検出のためのfor
 	for {
