@@ -48,12 +48,11 @@ func main() {
 
 	stream := api.UserStream(v)
 	//検出ツイート
-	// _,err:=api.PostTweet("@CaroBays ダジャレ検出を開始します。",nil)
-	_, err := api.PostTweet("テスト開始通知。", nil)
+	_, err := api.PostTweet("@CaroBays ダジャレ検出を開始します。", nil)
 
 	//すでに検出ツイートをしていた場合
 	for i := 2; err != nil; i++ {
-		_, err = api.PostTweet(strconv.Itoa(i)+"回目のテスト開始通知。", nil)
+		_, err = api.PostTweet("@CaroBays "+strconv.Itoa(i)+"回目のダジャレ検出開始通知。", nil)
 	}
 
 	//変数の準備
