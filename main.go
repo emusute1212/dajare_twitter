@@ -1,7 +1,6 @@
 package main
 
 import (
-	"container/list"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,6 +12,8 @@ import (
 	"github.com/emusute1212/dajare_twitter/queue"
 	"github.com/kurehajime/dajarep"
 )
+
+var dajareCount = 0
 
 type ApiConf struct {
 	ConsumerKey       string `json:"consumer_key"`
@@ -60,6 +61,7 @@ func main() {
 	var userName string
 	var tweetID string
 	var userID string
+	//キューのリセット
 	queue.Init()
 
 	//ツイート検出のためのfor
@@ -89,11 +91,18 @@ func main() {
 						//ダジャレ検出ツイート
 						text := makeTweet(userName, daj, wad)
 
+						//キューにツイートする内容を格納
+						queue.Enqueue(queue.TweetData{tweetID, text})
+					}
+					for temp, e := queue.Dequeue(); e == nil; temp, e = queue.Dequeue() {
 						//リプライを送る相手を指定
-						v.Set("in_reply_to_status_id", tweetID)
+						v.Set("in_reply_to_status_id", temp.ID)
 						//ツイート送信
-						_, error := api.PostTweet(text, v)
-						fmt.Println(error)
+						_, error := api.PostTweet(temp.Tweet, v)
+						if error != nil {
+							queue.Enqueue(temp)
+							fmt.Println(error)
+						}
 					}
 				}
 
@@ -122,6 +131,9 @@ func makeTweet(toName string, dajare []string, ward []string) string {
 	//検出ツイートの際に巻き込まれるユーザー
 	targetUser := " @CaroBays"
 
+	//検出開始してから検出したダジャレをカウントする
+	dajareCount++
+
 	//検出したダジャレ全てを通知するために一つのツイートに全てまとめる
 	for i := 0; i < len(dajare); i++ {
 		//ダジャレをコンソールへ出力
@@ -133,25 +145,17 @@ func makeTweet(toName string, dajare []string, ward []string) string {
 		if i < len(dajare)-1 {
 			content += "と"
 		} else {
-			content += "を検出しました。"
+			content += "を検出しました。\n検出開始から" + strconv.Itoa(dajareCount) + "回目。"
 		}
 	}
 
-	//ツイート制限140文字を守るための条件文(初めの@の分も考慮して140「未満」としてある)
-	if len([]rune(content))+len([]rune(targetUser))+len([]rune(toName)) < 140 {
-		content = " ダジャレを検出しました。"
+	//ツイート制限140文字を守るための条件文(初めの@の分も考慮して140以上としてある)
+	if len([]rune(content))+len([]rune(targetUser))+len([]rune(toName)) >= 140 {
+		content = " ダジャレを検出しました。\n検出開始から" + strconv.Itoa(dajareCount) + "回目。"
 	}
 
 	//実際に出力される文章
 	output = "@" + toName + targetUser + content
 
 	return output
-}
-
-func push(text string, q *list.List) {
-	q.PushBack(text)
-}
-
-func pop(q *list.List) (text string) {
-	return q.Remove(q.Front)
 }
