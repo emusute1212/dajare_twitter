@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/emusute1212/dajare_twitter/queue"
@@ -47,13 +50,53 @@ func main() {
 	v := url.Values{}
 
 	stream := api.UserStream(v)
-	//検出ツイート
-	_, err := api.PostTweet("@CaroBays ダジャレ検出を開始します。", nil)
 
-	//すでに検出ツイートをしていた場合
-	for i := 2; err != nil; i++ {
-		_, err = api.PostTweet("@CaroBays "+strconv.Itoa(i)+"回目のダジャレ検出開始通知。", nil)
-	}
+	//検出開始ツイートの通知
+	startTweet(api)
+
+	//シグナル処理(割り込みなどが発生時に検出終了通知を送信する)
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	go func() {
+		for {
+			s := <-signalChan
+			switch s {
+			// kill -SIGHUP XXXX
+			case syscall.SIGHUP:
+				fmt.Println("hungup")
+				endTweet(api)
+				os.Exit(0)
+
+			// kill -SIGINT XXXX or Ctrl+c
+			case syscall.SIGINT:
+				fmt.Println("Warikomi")
+				endTweet(api)
+				os.Exit(0)
+
+			// kill -SIGTERM XXXX
+			case syscall.SIGTERM:
+				fmt.Println("force stop")
+				endTweet(api)
+				os.Exit(0)
+
+			// kill -SIGQUIT XXXX
+			case syscall.SIGQUIT:
+				fmt.Println("stop and core dump")
+				endTweet(api)
+				os.Exit(0)
+
+			default:
+				fmt.Println("Unknown signal.")
+				endTweet(api)
+				os.Exit(1)
+			}
+		}
+	}()
 
 	//変数の準備
 	var tweet string
@@ -108,6 +151,26 @@ func main() {
 			default:
 			}
 		}
+	}
+}
+
+func startTweet(api *anaconda.TwitterApi) {
+	//検出ツイート
+	_, err := api.PostTweet("@CaroBays ダジャレ検出を開始します。", nil)
+
+	//すでに検出ツイートをしていた場合
+	for i := 2; err != nil; i++ {
+		_, err = api.PostTweet("@CaroBays "+strconv.Itoa(i)+"回目のダジャレ検出開始通知。", nil)
+	}
+}
+
+func endTweet(api *anaconda.TwitterApi) {
+	//検出終了ツイート
+	_, err := api.PostTweet("@CaroBays ダジャレ検出を終了します。", nil)
+
+	//すでに検出終了ツイートをしていた場合
+	for i := 2; err != nil; i++ {
+		_, err = api.PostTweet("@CaroBays "+strconv.Itoa(i)+"回目のダジャレ検出終了通知。", nil)
 	}
 }
 
